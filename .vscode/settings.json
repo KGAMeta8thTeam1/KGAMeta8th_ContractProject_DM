@@ -52,5 +52,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "KGAMeta8th_ContractProject_DM.sln"
+    "dotnet.defaultSolution": "KGAMeta8th_ContractProject_DM.sln",
+    "dotnet.preferCSharpExtension": true
 }

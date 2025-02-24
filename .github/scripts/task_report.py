@@ -3,32 +3,33 @@ from github import Github
 from datetime import datetime
 import re
 import json
- 
+import requests
+
 TASK_CATEGORIES = {
-    "🔧 기능 개발": {
+    "기능 개발": {
         "emoji": "🔧",
         "name": "기능 개발",
-        "description": "핵심 기능 구현 및 개발 관련 태스크"
+        "description": "주요 기능 개발 태스크"
     },
-    "🎨 UI/UX": {
+    "UI/UX": {
         "emoji": "🎨",
         "name": "UI/UX",
-        "description": "사용자 인터페이스 및 경험 관련 태스크"
+        "description": "UI/UX 디자인 및 개선"
     },
-    "🔍 QA/테스트": {
+    "QA/테스트": {
         "emoji": "🔍",
         "name": "QA/테스트",
-        "description": "품질 보증 및 테스트 관련 태스크"
+        "description": "품질 보증 및 테스트"
     },
-    "📚 문서화": {
+    "문서화": {
         "emoji": "📚",
         "name": "문서화",
-        "description": "문서 작성 및 관리 관련 태스크"
+        "description": "문서 작성 및 관리"
     },
-    "🛠️ 유지보수": {
+    "유지보수": {
         "emoji": "🛠️",
         "name": "유지보수",
-        "description": "버그 수정 및 성능 개선 관련 태스크"
+        "description": "버그 수정 및 유지보수"
     }
 }
 
@@ -44,23 +45,48 @@ def get_assignees_string(issue):
     return ', '.join([assignee.login for assignee in issue.assignees]) if issue.assignees else 'TBD'
 
 def get_task_duration(task_issue):
-    body_lines = task_issue.body.split('\n')
-    total_days = 0
+    """태스크의 예상 소요 시간을 계산합니다."""
+    print(f"\n=== 태스크 #{task_issue.number}의 예상 시간 추출 시작 ===")
     
-    in_gantt = False
+    # 1. 기본 정보 섹션에서 예상 시간 찾기
+    body_lines = task_issue.body.split('\n')
     for line in body_lines:
         line = line.strip()
-        if 'gantt' in line:
-            in_gantt = True
-            continue
-        if in_gantt and line and not line.startswith('```') and not line.startswith('title') and not line.startswith('dateFormat') and not line.startswith('section'):
-            if ':' in line and 'd' in line:
-                duration = line.split(',')[-1].strip()
-                if duration.endswith('d'):
-                    days = int(duration[:-1])
-                    total_days += days
+        if '예상 시간:' in line or '예상시간:' in line:
+            time_str = line.split(':', 1)[1].strip()
+            print(f"기본 정보에서 예상 시간 발견: {time_str}")
+            if time_str.endswith('d'):
+                return time_str
+            else:
+                return f"{time_str}d"
     
-    return f"{total_days}d"
+    # 2. 제안일과 구현목표일로부터 계산
+    proposal_date = None
+    target_date = None
+    
+    for line in body_lines:
+        line = line.strip()
+        if '제안일:' in line:
+            try:
+                proposal_date = datetime.strptime(line.split(':', 1)[1].strip(), '%Y.%m.%d')
+                print(f"제안일 발견: {proposal_date.date()}")
+            except:
+                continue
+        elif '구현목표일:' in line:
+            try:
+                target_date = datetime.strptime(line.split(':', 1)[1].strip(), '%Y.%m.%d')
+                print(f"구현목표일 발견: {target_date.date()}")
+            except:
+                continue
+    
+    if proposal_date and target_date:
+        duration = (target_date - proposal_date).days
+        print(f"날짜 차이로 계산된 예상 시간: {duration}d")
+        return f"{duration}d"
+    
+    # 3. 기본값 반환
+    print("예상 시간을 찾을 수 없어 기본값 사용: 1d")
+    return "1d"
 
 def parse_time_spent(todo_text):
     spent_match = re.search(r'\(spent:\s*(\d+)h\)', todo_text)
@@ -76,12 +102,10 @@ def update_task_status(repo, task_number, todo_text):
     if not report_issue:
         return
         
-    # extract spent time
     spent_time = parse_time_spent(todo_text)
     if not spent_time:
         return
         
-    # update report content
     body = report_issue.body
     task_pattern = rf"\|\s*\[TSK-{task_number}\].*?\|\s*([^\|]*?)\s*\|\s*([^\|]*?)\s*\|\s*([^\|]*?)\s*\|\s*-\s*\|\s*🟡\s*진행중\s*\|\s*-\s*\|"
     
@@ -114,11 +138,23 @@ def create_task_entry(task_issue):
 
 def get_category_from_labels(issue_labels):
     """이슈의 라벨을 기반으로 카테고리를 결정합니다."""
+    # 기존 시스템 카테고리들은 모두 "기능 개발"로 매핑
+    system_categories = [
+        "기본 노트 판정 시스템",
+        "콤보 시스템",
+        "점수 관리 시스템",
+        "롱노트 시스템",
+        "NoteEditorSystem"
+    ]
+    
     for label in issue_labels:
-        category_key = label.name
-        if category_key in TASK_CATEGORIES:
-            return category_key
-    return "🔧 기능 개발"  # default category
+        if label.name.startswith("category:"):
+            category_name = label.name.replace("category:", "").strip()
+            if category_name in system_categories:
+                return "기능 개발"
+            elif category_name in TASK_CATEGORIES:
+                return category_name
+    return "기능 개발"  # 기본값도 기능 개발로 설정
 
 def create_category_sections():
     """모든 카테고리 섹션을 생성합니다."""
@@ -198,46 +234,101 @@ def update_report_content(old_content, new_task_entry, category_key):
 def calculate_progress_stats(body):
     """보고서 내용에서 태스크 진행 상태를 계산합니다."""
     print("\n[진행 상태] 계산 시작")
-    completed = 0
-    in_progress = 0
-    total = 0
+    stats = {
+        "완료": 0,
+        "진행중": 0,
+        "대기중": 0,
+        "total": 0,
+        "category_stats": {}
+    }
     
-    # check all task status
+    current_category = None
+    
+    # 모든 카테고리 통계 초기화
+    for category in TASK_CATEGORIES.keys():
+        stats["category_stats"][category] = {
+            "완료": 0,
+            "진행중": 0,
+            "대기중": 0,
+            "total": 0
+        }
+    
     for line in body.split('\n'):
+        # 카테고리 헤더 확인
+        if '<summary><h3>' in line:
+            category_match = re.search(r'<h3>(.*?)</h3>', line)
+            if category_match:
+                current_category = category_match.group(1)
+                continue
+        
+        # 태스크 행 확인
         if '| TSK-' in line or '|[TSK-' in line:
-            total += 1
-            if '✅ 완료' in line:
-                completed += 1
-            elif '🟡 진행중' in line:
-                in_progress += 1
+            if current_category:
+                stats["total"] += 1
+                stats["category_stats"][current_category]["total"] += 1
+                
+                if '✅ 완료' in line:
+                    stats["완료"] += 1
+                    stats["category_stats"][current_category]["완료"] += 1
+                elif '🟡 진행중' in line:
+                    stats["진행중"] += 1
+                    stats["category_stats"][current_category]["진행중"] += 1
+                else:
+                    stats["대기중"] += 1
+                    stats["category_stats"][current_category]["대기중"] += 1
     
-    print(f"[진행 상태] 완료: {completed}, 진행중: {in_progress}, 총: {total}")
-    return completed, in_progress, total
+    print(f"[진행 상태] 완료: {stats['완료']}, 진행중: {stats['진행중']}, 대기중: {stats['대기중']}, 총: {stats['total']}")
+    return stats
 
-def create_progress_section(completed, in_progress, total):
+def create_progress_section(stats):
     """진행 현황 섹션을 생성합니다."""
-    completed_percent = 0 if total == 0 else (completed / total) * 100
-    in_progress_percent = 0 if total == 0 else (in_progress / total) * 100
+    if stats["total"] == 0:
+        return """### 전체 진행률
+
+아직 등록된 태스크가 없습니다.
+
+```mermaid
+pie title 태스크 진행 상태
+    "대기중" : 100
+```"""
+    
+    completed_percent = (stats["완료"] / stats["total"]) * 100
+    in_progress_percent = (stats["진행중"] / stats["total"]) * 100
+    waiting_percent = (stats["대기중"] / stats["total"]) * 100
+    
+    # 카테고리별 진행률 계산
+    category_progress = []
+    for category, cat_stats in stats["category_stats"].items():
+        if cat_stats["total"] > 0:
+            cat_completed = (cat_stats["완료"] / cat_stats["total"]) * 100
+            category_progress.append(f"- {TASK_CATEGORIES[category]['emoji']} **{category}**: {cat_completed:.1f}% 완료 ({cat_stats['완료']}/{cat_stats['total']})")
+    
+    category_section = "\n".join(category_progress) if category_progress else "아직 카테고리별 진행률을 계산할 수 없습니다."
     
     return f"""### 전체 진행률
 
-진행 상태: {completed}/{total} 완료 ({completed_percent:.1f}%)
+전체 진행 상태: {stats["완료"]}/{stats["total"]} 완료 ({completed_percent:.1f}%)
 
 ```mermaid
 pie title 태스크 진행 상태
     "완료" : {completed_percent:.1f}
     "진행중" : {in_progress_percent:.1f}
-```"""
+    "대기중" : {waiting_percent:.1f}
+```
+
+### 카테고리별 진행률
+
+{category_section}"""
 
 def update_progress_section(body):
     """보고서의 진행 현황 섹션을 업데이트합니다."""
     print("\n=== 진행 현황 섹션 업데이트 ===")
     
     # calculate progress status
-    completed, in_progress, total = calculate_progress_stats(body)
+    stats = calculate_progress_stats(body)
     
     # create new progress section
-    new_progress_section = create_progress_section(completed, in_progress, total)
+    new_progress_section = create_progress_section(stats)
     
     # update progress section
     progress_start = body.find("### 전체 진행률")
@@ -254,11 +345,18 @@ def update_progress_section(body):
 
 def create_report_body(project_name):
     """프로젝트 보고서 템플릿을 생성합니다."""
-    # create category sections
+    # 카테고리 섹션 생성
     category_sections = create_category_sections()
     
-    # create initial progress section
-    initial_progress = create_progress_section(0, 0, 0)
+    # 초기 진행 현황 섹션 생성
+    initial_stats = {
+        "완료": 0,
+        "진행중": 0,
+        "대기중": 0,
+        "total": 0,
+        "category_stats": {category: {"완료": 0, "진행중": 0, "대기중": 0, "total": 0} for category in TASK_CATEGORIES.keys()}
+    }
+    initial_progress = create_progress_section(initial_stats)
     
     return f"""<div align="center">
 
@@ -483,26 +581,21 @@ def process_approval(issue, repo):
         category_key = get_category_from_labels(issue.labels)
         print(f"태스크 카테고리: {category_key}")
         
-        # find existing report issue
         report_issue = find_report_issue(repo, project_name)
         
         if report_issue:
             print(f"\n보고서 이슈 발견: #{report_issue.number}")
-            # update existing report
             task_entry = create_task_entry(issue)
             print(f"생성된 태스크 항목:\n{task_entry}")
             
-            # update task entry
             updated_body = update_report_content(report_issue.body, task_entry, category_key)
             
-            # update progress section
             updated_body = update_progress_section(updated_body)
             
             report_issue.edit(body=updated_body)
             report_issue.create_comment(f"✅ 태스크 #{issue.number}이 {category_key} 카테고리에 추가되었습니다.")
             print("보고서 업데이트 완료")
             
-            # find Daily Log issue and add TODO
             print("\n=== Daily Log 처리 시작 ===")
             daily_issue = find_daily_log_issue(repo, project_name)
             if daily_issue:
@@ -561,53 +654,482 @@ def process_approval(issue, repo):
     elif '⏸️ 보류' in labels:
         issue.create_comment("⏸️ 태스크가 보류되었습니다. 추가 논의가 필요합니다.")
 
+def extract_main_tasks(body):
+    """태스크 보고서에서 메인 태스크 목록을 추출합니다."""
+    main_tasks = {}
+    current_category = None
+    
+    for line in body.split('\n'):
+        if '<summary><h3>' in line:
+            category_match = re.search(r'<h3>(.*?)</h3>', line)
+            if category_match:
+                current_category = category_match.group(1)
+        elif '| [TSK-' in line and current_category:
+            # [TSK-XX] 형식의 태스크 참조 추출
+            task_match = re.search(r'\|\s*\[TSK-(\d+)\]', line)
+            if task_match:
+                task_id = task_match.group(1)
+                task_reference = f'[TSK-{task_id}]'
+                
+                # 태스크명 추출 (두 번째 | 와 세 번째 | 사이의 내용)
+                task_parts = line.split('|')
+                if len(task_parts) >= 3:
+                    task_name = task_parts[2].strip()
+                    main_tasks[task_reference] = {
+                        'id': task_id,
+                        'name': task_name,
+                        'category': current_category,
+                        'todos': [],
+                        'completed': 0,
+                        'total': 0
+                    }
+                    print(f"태스크 추출: {task_reference} - {task_name}")
+    
+    return main_tasks
+
+def find_task_issue(repo, task_id):
+    """태스크 ID로 해당 태스크 이슈를 찾습니다."""
+    print(f"\n=== 태스크 TSK-{task_id} 검색 ===")
+    
+    try:
+        issue = repo.get_issue(int(task_id))
+        print(f"태스크 이슈 발견: #{issue.number} - {issue.title}")
+        return issue
+    except Exception as e:
+        print(f"태스크 이슈 #{task_id} 검색 중 오류 발생: {str(e)}")
+        return None
+
+def map_todos_to_tasks(todos, main_tasks):
+    """TODO 아이템들을 메인 태스크에 매핑합니다."""
+    print("\n=== TODO 매핑 시작 ===")
+    
+    github_token = os.getenv('GITHUB_TOKEN')
+    if not github_token:
+        print("GitHub 토큰이 설정되지 않았습니다.")
+        return
+    
+    github = Github(github_token)
+    repo = github.get_repo(os.getenv('GITHUB_REPOSITORY'))
+    
+    # 태스크 매핑 생성 (태스크 이름을 키로 사용)
+    task_mapping = {}
+    for task_reference, task_info in main_tasks.items():
+        task_issue = find_task_issue(repo, task_info['id'])
+        if task_issue:
+            expected_time = get_task_duration(task_issue)
+            task_name = task_info['name']  # 태스크 이름 추출
+            # main_tasks에 expected_time 추가
+            main_tasks[task_reference]['expected_time'] = expected_time
+            task_mapping[task_name] = {
+                'id': task_info['id'],
+                'name': task_name,
+                'expected_time': expected_time,
+                'task_issue': task_issue,
+                'reference': task_reference
+            }
+            print(f"태스크 {task_reference} 매핑 완료 (예상 시간: {expected_time}, 태스크명: {task_name})")
+    
+    print(f"발견된 태스크: {list(task_mapping.keys())}")
+    
+    # TODO 항목 처리
+    for checked, text in todos:
+        if text.startswith('@'):
+            continue
+            
+        if text.startswith('#'):
+            try:
+                issue_number = int(text.strip('#').split()[0])
+                issue = repo.get_issue(issue_number)
+                
+                # 이슈의 카테고리 라벨 확인
+                task_name = None
+                for label in issue.labels:
+                    if label.name.startswith('category:'):
+                        task_name = label.name.replace('category:', '').strip()
+                        break
+                
+                if task_name and task_name in task_mapping:
+                    task_reference = task_mapping[task_name]['reference']
+                    print(f"\n이슈 #{issue_number}가 태스크 {task_reference} ({task_name})에 속합니다.")
+                    
+                    # 이슈 상태 확인
+                    is_completed = issue.state == 'closed'
+                    
+                    # 프로젝트 상태 확인
+                    project_status = get_project_item_status(github_token, issue_number)
+                    is_in_progress = project_status == 'In Progress' if project_status else False
+                    
+                    # 태스크 정보 업데이트
+                    main_tasks[task_reference]['todos'].append({
+                        'text': text,
+                        'completed': is_completed,
+                        'in_progress': is_in_progress,
+                        'issue_number': issue_number,
+                        'issue_state': issue.state,
+                        'project_status': project_status
+                    })
+                    
+                    main_tasks[task_reference]['total'] += 1
+                    if is_completed:
+                        main_tasks[task_reference]['completed'] += 1
+                    elif is_in_progress:
+                        main_tasks[task_reference]['in_progress'] = True
+                    
+                    status = "✅ 완료" if is_completed else "🟡 진행중" if is_in_progress else "⬜ 대기중"
+                    print(f"{status} {text} (상태: {issue.state}, 프로젝트 상태: {project_status})")
+                else:
+                    print(f"\n이슈 #{issue_number}는 매칭되는 태스크를 찾을 수 없습니다: {task_name if task_name else '카테고리 없음'}")
+                    
+            except Exception as e:
+                print(f"\n이슈 #{text.strip('#').split()[0]} 처리 중 오류 발생: {str(e)}")
+                continue
+
+def calculate_task_progress(main_tasks):
+    """각 태스크의 진행률을 계산합니다."""
+    for task_info in main_tasks.values():
+        if task_info['total'] > 0:
+            task_info['progress'] = (task_info['completed'] / task_info['total']) * 100
+        else:
+            task_info['progress'] = 0
+
+def get_completed_tasks_by_date(github_token, repo_owner, repo_name):
+    """GitHub Projects에서 완료된 작업들을 날짜별로 조회합니다."""
+    headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    query = """
+    query($owner: String!, $name: String!) {
+        repository(owner: $owner, name: $name) {
+            issues(first: 100, states: CLOSED) {
+                nodes {
+                    number
+                    title
+                    closedAt
+                    labels(first: 10) {
+                        nodes {
+                            name
+                        }
+                    }
+                    projectItems(first: 1) {
+                        nodes {
+                            status: fieldValueByName(name: "Status") {
+                                ... on ProjectV2ItemFieldSingleSelectValue {
+                                    name
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    """
+    
+    try:
+        response = requests.post(
+            'https://api.github.com/graphql',
+            json={'query': query, 'variables': {'owner': repo_owner, 'name': repo_name}},
+            headers=headers
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        completed_tasks = {}
+        
+        if 'data' in result and 'repository' in result['data']:
+            issues = result['data']['repository']['issues']['nodes']
+            for issue in issues:
+                # 이슈가 Done 상태이거나 closed 상태인 경우
+                is_done = False
+                if issue['projectItems']['nodes']:
+                    status = issue['projectItems']['nodes'][0].get('status', {})
+                    is_done = status and status.get('name') == 'Done'
+                
+                if is_done and issue['closedAt']:
+                    closed_date = issue['closedAt'][:10]  # YYYY-MM-DD
+                    if closed_date not in completed_tasks:
+                        completed_tasks[closed_date] = []
+                    
+                    # 카테고리 라벨 찾기
+                    category = "기타"
+                    for label in issue['labels']['nodes']:
+                        if label['name'].startswith('category:'):
+                            category = label['name'].replace('category:', '').strip()
+                            break
+                    
+                    completed_tasks[closed_date].append({
+                        'number': issue['number'],
+                        'title': issue['title'],
+                        'category': category
+                    })
+        
+        return completed_tasks
+    except Exception as e:
+        print(f"완료된 작업 조회 중 오류 발생: {str(e)}")
+        return {}
+
+def create_completion_history_section(completed_tasks):
+    """완료된 작업 히스토리 섹션을 생성합니다."""
+    if not completed_tasks:
+        return "### 📅 완료 작업 히스토리\n\n아직 완료된 작업이 없습니다."
+    
+    sections = ["### 📅 완료 작업 히스토리\n"]
+    
+    for date in sorted(completed_tasks.keys(), reverse=True):
+        tasks = completed_tasks[date]
+        section = f"\n#### {date}\n"
+        
+        # 카테고리별로 그룹화
+        categorized = {}
+        for task in tasks:
+            if task['category'] not in categorized:
+                categorized[task['category']] = []
+            categorized[task['category']].append(task)
+        
+        # 카테고리별로 출력
+        for category, category_tasks in categorized.items():
+            emoji = TASK_CATEGORIES.get(category, {}).get('emoji', '📌')
+            section += f"\n{emoji} **{category}**\n"
+            for task in category_tasks:
+                section += f"- #{task['number']} {task['title']}\n"
+        
+        sections.append(section)
+    
+    return '\n'.join(sections)
+
+def update_task_progress_in_report(body, main_tasks):
+    """보고서의 태스크 진행률을 업데이트합니다."""
+    print("\n=== 태스크 진행률 업데이트 시작 ===")
+    
+    # GitHub 정보 가져오기
+    github_token = os.getenv('GITHUB_TOKEN')
+    repo_name = os.getenv('GITHUB_REPOSITORY')
+    repo_owner, repo_name = repo_name.split('/')
+    
+    # 완료된 작업 히스토리 가져오기
+    completed_tasks = get_completed_tasks_by_date(github_token, repo_owner, repo_name)
+    completion_history = create_completion_history_section(completed_tasks)
+    
+    lines = body.split('\n')
+    updated_lines = []
+    current_category = None
+    
+    # 태스크 진행 상태 업데이트
+    for line in body.split('\n'):
+        if '<summary><h3>' in line:
+            category_match = re.search(r'<h3>(.*?)</h3>', line)
+            if category_match:
+                current_category = category_match.group(1)
+                updated_lines.append(line)
+                print(f"\n현재 카테고리: {current_category}")
+        elif '| [TSK-' in line or '|[TSK-' in line:
+            original_line = line
+            for task_name, task_info in main_tasks.items():
+                task_id_pattern = f"TSK-{task_info['id']}"
+                if task_id_pattern in line:
+                    print(f"\n태스크 발견: {task_name} (TSK-{task_info['id']})")
+                    print(f"진행률: {task_info['progress']:.1f}% ({task_info['completed']}/{task_info['total']})")
+                    
+                    # 진행 상태 컬럼 업데이트
+                    columns = line.split('|')
+                    if len(columns) >= 7:
+                        # 예상 시간 업데이트 (4번째 컬럼)
+                        columns[4] = f" {task_info['expected_time']} "
+                        progress = f"{task_info['progress']:.1f}%"
+                        status = "✅ 완료" if task_info['progress'] == 100 else f"🟡 진행중 ({progress})"
+                        columns[6] = f" {status} "
+                        line = '|'.join(columns)
+                        print(f"업데이트된 라인: {line}")
+                    break
+            
+            if line != original_line:
+                print("라인이 업데이트되었습니다.")
+            updated_lines.append(line)
+        else:
+            updated_lines.append(line)
+    
+    updated_body = '\n'.join(updated_lines)
+    
+    # 진행 현황 섹션 업데이트
+    progress_start = updated_body.find("### 전체 진행률")
+    if progress_start != -1:
+        progress_end = updated_body.find("## 📝 특이사항", progress_start)
+        if progress_end != -1:
+            # 진행 현황 섹션 생성
+            stats = calculate_progress_stats(updated_body)
+            progress_section = create_progress_section(stats)
+            updated_body = updated_body[:progress_start] + progress_section + "\n\n" + updated_body[progress_end:]
+    
+    print("\n=== 진행 현황 업데이트 완료 ===")
+    return updated_body
+
+def sync_all_issues(repo):
+    """현재 열려있는 모든 이슈를 순회하여 프로젝트 보고서를 업데이트합니다."""
+    print("\n=== 전체 이슈 동기화 시작 ===")
+    
+    # 프로젝트 이름 가져오기
+    project_name = repo.name
+    
+    # 보고서 이슈 찾기
+    report_issue = find_report_issue(repo, project_name)
+    if not report_issue:
+        print("보고서 이슈를 찾을 수 없습니다.")
+        return
+    
+    # DSR 이슈 찾기
+    dsr_issues = repo.get_issues(state='open', labels=['DSR'])
+    latest_dsr = None
+    for issue in dsr_issues:
+        if issue.title.startswith('📅 Development Status Report'):
+            latest_dsr = issue
+            break
+    
+    if not latest_dsr:
+        print("DSR 이슈를 찾을 수 없습니다.")
+        return
+    
+    # 메인 태스크 추출
+    main_tasks = extract_main_tasks(report_issue.body)
+    print(f"\n메인 태스크 추출 완료: {len(main_tasks)}개 발견")
+    
+    # DSR의 TODO 아이템 파싱
+    dsr_content = parse_existing_issue(latest_dsr.body)
+    todos = dsr_content['todos']
+    
+    # TODO 아이템들을 메인 태스크에 매핑
+    map_todos_to_tasks(todos, main_tasks)
+    print("\nTODO 매핑 완료")
+    
+    # 진행률 계산
+    calculate_task_progress(main_tasks)
+    print("\n진행률 계산 완료")
+    
+    # 태스크 보고서 업데이트
+    updated_body = update_task_progress_in_report(report_issue.body, main_tasks)
+    
+    # 진행 상황 요약 생성
+    summary = "\n### 🔄 현재 진행 상황\n\n"
+    for task_name, task_info in main_tasks.items():
+        progress = f"{task_info['progress']:.1f}%"
+        summary += f"• **{task_name}**: {progress} ({task_info['completed']}/{task_info['total']} 완료)\n"
+    
+    # 특이사항 섹션 찾기
+    special_section_start = updated_body.find("## 📝 특이사항")
+    if special_section_start != -1:
+        # 진행 상황 요약을 특이사항 섹션 앞에 추가
+        updated_body = updated_body[:special_section_start] + summary + "\n" + updated_body[special_section_start:]
+    
+    if updated_body != report_issue.body:
+        report_issue.edit(body=updated_body)
+        print("\n보고서 업데이트 완료")
+    else:
+        print("\n업데이트할 내용이 없습니다.")
+
+def get_project_item_status(github_token, issue_number):
+    """GitHub Projects v2에서 이슈의 상태를 확인합니다."""
+    headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    query = """
+    query($org: String!, $number: Int!) {
+        organization(login: $org) {
+            projectV2(number: $number) {
+                items(first: 100) {
+                    nodes {
+                        content {
+                            ... on Issue {
+                                number
+                            }
+                        }
+                        fieldValues(first: 8) {
+                            nodes {
+                                ... on ProjectV2ItemFieldSingleSelectValue {
+                                    name
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    """
+    
+    try:
+        response = requests.post(
+            'https://api.github.com/graphql',
+            json={'query': query, 'variables': {
+                'org': 'KGAMeta8thTeam1',
+                'number': 2
+            }},
+            headers=headers
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'data' in result and 'organization' in result['data']:
+            items = result['data']['organization']['projectV2']['items']['nodes']
+            for item in items:
+                if item['content'] and item['content'].get('number') == issue_number:
+                    field_values = item['fieldValues']['nodes']
+                    for value in field_values:
+                        if value and value.get('name'):
+                            return value['name']
+        return None
+    except Exception as e:
+        print(f"프로젝트 상태 확인 중 오류 발생: {str(e)}")
+        return None
+
 def main():
     try:
         print("\n[시작] 태스크 처리 스크립트")
         
-        # initialize GitHub client
+        # GitHub 클라이언트 초기화
         github_token = os.getenv('GITHUB_TOKEN')
         if not github_token:
             raise ValueError("GitHub 토큰이 설정되지 않았습니다.")
         github = Github(github_token)
         
-        # get repository information
+        # 저장소 정보 가져오기
         repo_name = os.getenv('GITHUB_REPOSITORY')
         if not repo_name:
             raise ValueError("GitHub 저장소 정보를 찾을 수 없습니다.")
         repo = github.get_repo(repo_name)
         print(f"[정보] 저장소: {repo_name}")
         
-        # get event information
+        # 이벤트 정보 가져오기
         event_name = os.getenv('GITHUB_EVENT_NAME')
         event_path = os.getenv('GITHUB_EVENT_PATH')
         print(f"[정보] 이벤트: {event_name}")
         
-        if not event_path or not os.path.exists(event_path):
-            raise ValueError(f"이벤트 파일을 찾을 수 없습니다: {event_path}")
+        # 전체 이슈 동기화 실행
+        sync_all_issues(repo)
         
-        # read event data
-        with open(event_path, 'r', encoding='utf-8') as f:
-            event_data = json.load(f)
-            issue_number = event_data['issue']['number']
-            issue = repo.get_issue(issue_number)
-            labels = [label.name for label in issue.labels]
-            print(f"[처리] 이슈 #{issue_number}: {issue.title}")
-            
-            # process based on event type
-            if event_name in ['issues', 'issue_comment']:
-                # process task approval/rejection
-                if '✅ 승인완료' in labels:
-                    print("[실행] 태스크 승인 처리")
-                    process_approval(issue, repo)
-                elif '❌ 반려' in labels:
-                    print("[실행] 태스크 반려 처리")
-                    process_approval(issue, repo)
-                elif '⏸️ 보류' in labels:
-                    print("[실행] 태스크 보류 처리")
-                    process_approval(issue, repo)
-            else:
-                print(f"[오류] 지원하지 않는 이벤트: {event_name}")
+        if event_path and os.path.exists(event_path):
+            # 이벤트 데이터 처리
+            with open(event_path, 'r', encoding='utf-8') as f:
+                event_data = json.load(f)
+                if 'issue' in event_data:
+                    issue_number = event_data['issue']['number']
+                    issue = repo.get_issue(issue_number)
+                    labels = [label.name for label in issue.labels]
+                    print(f"[처리] 이슈 #{issue_number}: {issue.title}")
+                    
+                    # 이벤트 타입에 따른 처리
+                    if event_name in ['issues', 'issue_comment']:
+                        if '✅ 승인완료' in labels:
+                            print("[실행] 태스크 승인 처리")
+                            process_approval(issue, repo)
+                        elif '❌ 반려' in labels:
+                            print("[실행] 태스크 반려 처리")
+                            process_approval(issue, repo)
+                        elif '⏸️ 보류' in labels:
+                            print("[실행] 태스크 보류 처리")
+                            process_approval(issue, repo)
                 
     except Exception as e:
         print(f"\n[오류] {str(e)}")

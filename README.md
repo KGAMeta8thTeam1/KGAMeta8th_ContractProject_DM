@@ -4,54 +4,114 @@
 
 # KGA 메타 8기 기업 협약 프로젝트 1팀 리포지토리
 
-<p align="center">
-  <!-- 프로젝트에 맞는 뱃지로 교체하세요 -->
-  <img src="https://img.shields.io/badge/Unity_VR-FF4154?style=for-the-badge&logo=git&VR=white"/>
-  <img src="https://img.shields.io/badge/Development-4B32C3?style=for-the-badge&logo=dev.to&logoColor=white"/>
-  <!-- 더 많은 뱃지는 https://shields.io/ 에서 생성할 수 있습니다 -->
-</p>
+<div align="center">
+  <p align="center">
+    <a href="#" alt="Unity Version">
+      <img src="https://img.shields.io/badge/Unity-2020.3.18f1-000000?style=for-the-badge&logo=unity&logoColor=white"/>
+    </a>
+    <a href="#" alt="VR Platform">
+      <img src="https://img.shields.io/badge/Meta_Quest-00B5E2?style=for-the-badge&logo=meta&logoColor=white"/>
+    </a>
+    <a href="#" alt="Development Status">
+      <img src="https://img.shields.io/badge/Status-In_Development-4B32C3?style=for-the-badge&logo=git&logoColor=white"/>
+    </a>
+    <br/>
+    <a href="#" alt="Team Size">
+      <img src="https://img.shields.io/badge/Team_Size-9_Members-009688?style=for-the-badge&logo=github&logoColor=white"/>
+    </a>
+  </p>
+</div>
 
 ## 📋 프로젝트 개요
 
-<details>
 <summary><b>📌 프로젝트 정보</b></summary>
 <div align="center">
 
-━━━━━━━━━━━━━━━━━━━━━━
-
 ### 🎯 프로젝트 분류
 
-#### • Unity XR 을 이용한 VR 리듬게임 프로젝트
-
-━━━━━━━━━━━━━━━━━━━━━━
+<div align="center">
+<table width="100%" style="border: none;">
+  <tr>
+    <td align="center">
+      <img src="https://img.shields.io/badge/Project_Type-VR_Game-FF4154?style=for-the-badge&logo=unity&logoColor=white"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <h3>Unity XR 기반 VR 리듬 액션 게임</h3>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <p>
+        Unity XR 프레임워크를 활용한 몰입형 VR 리듬 게임 프로젝트
+      </p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="https://img.shields.io/badge/Unity-2020.3.18f1-lightgrey?style=flat-square&logo=unity"/>
+      <img src="https://img.shields.io/badge/XR-Interaction_Toolkit-blue?style=flat-square&logo=unity"/>
+      <img src="https://img.shields.io/badge/Platform-Meta_Quest-purple?style=flat-square&logo=meta"/>
+    </td>
+  </tr>
+</table>
 
 ### 👥 개발 인원
 
-#### • [개발자]
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="200">
+      <h4>🛠️ 개발자</h4>
+    </td>
+    <td align="center" width="200">
+      <img src="https://avatars.githubusercontent.com/u/180180474?v=4" width="80" height="80" style="border-radius: 50%"><br/>
+      <b>최현성</b>
+    </td>
+    <td align="center" width="200">
+      <img src="https://avatars.githubusercontent.com/u/182709278?v=4" width="80" height="80" style="border-radius: 50%"><br/>
+      <b>김진</b>
+    </td>
+    <td align="center" width="200">
+      <img src="https://avatars.githubusercontent.com/u/184887876?v=4" width="80" height="80" style="border-radius: 50%"><br/>
+      <b>김현지</b>
+    </td>
+    <td align="center" width="200">
+      <img src="https://avatars.githubusercontent.com/u/185158217?v=4" width="80" height="80" style="border-radius: 50%"><br/>
+      <b>류지형</b>
+    </td>
+    <td align="center" width="200">
+      <img src="https://avatars.githubusercontent.com/u/122141735?v=4" width="80" height="80" style="border-radius: 50%"><br/>
+      <b>김범희</b>
+    </td>
+  </tr>
+</table>
 
-최현성
-
-김진
-
-김현지
-
-류지형
-
-김범희
-
-#### • [기획자]
-
-김성연
-
-이은영
-
-허 웅
-
-최민석
-
-김윤성
-
-━━━━━━━━━━━━━━━━━━━━━━
+<table>
+  <tr>
+    <td align="center" width="200">
+      <h4>📋 기획자</h4>
+    </td>
+    <td align="center" width="200">
+      <img src="https://avatars.githubusercontent.com/u/192933139?v=4" width="80" height="80" style="border-radius: 50%"><br/>
+      <b>김성연</b>
+    </td>
+    <td align="center" width="200">
+      <img src="https://avatars.githubusercontent.com/u/192932754?v=4" width="80" height="80" style="border-radius: 50%"><br/>
+      <b>이은영</b>
+    </td>
+    <td align="center" width="200">
+      <img src="https://avatars.githubusercontent.com/u/192052305?v=4" width="80" height="80" style="border-radius: 50%"><br/>
+      <b>최민석</b>
+    </td>
+    <td align="center" width="200">
+      <img src="https://avatars.githubusercontent.com/u/192052411?v=4" width="80" height="80" style="border-radius: 50%"><br/>
+      <b>김윤성</b>
+    </td>
+  </tr>
+</table>
+</div>
 
 </div>
 </details>
@@ -245,140 +305,6 @@ Closes #128
 </div>
 
 ━━━━━━━━━━━━━━━━━━━━━━
-
-</div>
-</details<details>
-<summary><h1>📋 Daily Development Log 사용 설명</h1></summary>
-<div align="center">
-
-## 📌 개요
-
-이 GitHub 액션은 커밋 메시지를 기반으로 일일 개발 로그를 자동으로 생성하고 관리합니다. 브랜치별 작업 내역과 TODO 항목을 체계적으로 관리할 수 있습니다.
-
-## 🔧 주요 기능
-
-### ✨ 일일 개발 로그 자동 생성
-
-&nbsp;&nbsp;&nbsp;• 당일 날짜의 개발 로그 이슈 자동 생성<br>
-&nbsp;&nbsp;&nbsp;• 브랜치별 커밋 내역 정리<br>
-&nbsp;&nbsp;&nbsp;• TODO 항목 관리<br>
-
-### 🌿 브랜치 관리
-
-&nbsp;&nbsp;&nbsp;• 브랜치별 커밋 히스토리 누적<br>
-&nbsp;&nbsp;&nbsp;• 커밋 상세 정보 (시간, 작성자, 타입) 표시<br>
-&nbsp;&nbsp;&nbsp;• 관련 이슈 연결<br>
-
-### 📝 TODO 관리
-
-&nbsp;&nbsp;&nbsp;• 체크박스 형식의 TODO 항목 관리<br>
-&nbsp;&nbsp;&nbsp;• 이전 날짜의 미완료 TODO 자동 이전<br>
-&nbsp;&nbsp;&nbsp;• TODO 상태 (완료/미완료) 보존<br>
-&nbsp;&nbsp;&nbsp;• 중복 TODO 처리<br>
-&nbsp;&nbsp;&nbsp;• @카테고리 문법으로 TODO 항목 분류<br>
-&nbsp;&nbsp;&nbsp;• 대소문자 구분 없는 카테고리 처리<br>
-&nbsp;&nbsp;&nbsp;• 미분류 항목을 위한 General 카테고리 자동 생성<br>
-&nbsp;&nbsp;&nbsp;• 카테고리별 완료/전체 통계 자동 생성 (예: Combat (2/5))<br>
-&nbsp;&nbsp;&nbsp;• (issue) 접두사로 할일 항목 자동 이슈화<br>
-
-### 💫 카테고리 기능 사용법
-
-```markdown
-[Todo]
-@Combat
-
-- 몬스터 전투 시스템 구현
-- 플레이어 공격 패턴 추가
-- (issue) 보스 AI 패턴 최적화 필요
-
-@UI
-
-- 전투 UI 레이아웃 디자인
-- 데미지 표시 효과 구현
-
-@Sound
-
-- 전투 효과음 추가
-- BGM 전환 시스템 구현
-
-- 버그 수정 및 테스트 (자동으로 General 카테고리로 분류)
-```
-
-### 📑 카테고리 표시 형식
-
-```markdown
-<details>
-<summary>📑 General (0/1)</summary>
-- [ ] 버그 수정 및 테스트
-</details>
-
-<details>
-<summary>📑 Combat (1/3)</summary>
-- [ ] 몬스터 전투 시스템 구현
-- [x] 플레이어 공격 패턴 추가
-- [ ] #123 (자동 생성된 보스 AI 이슈)
-</details>
-
-<details>
-<summary>📑 UI (0/2)</summary>
-- [ ] 전투 UI 레이아웃 디자인
-- [ ] 데미지 표시 효과 구현
-</details>
-```
-
-### ✨ 카테고리 기능 특징
-
-&nbsp;&nbsp;&nbsp;• `@카테고리명`으로 새 카테고리 생성 또는 전환<br>
-&nbsp;&nbsp;&nbsp;• 대소문자 구분 없이 동일 카테고리로 처리 (@COMBAT = @Combat)<br>
-&nbsp;&nbsp;&nbsp;• 원본 카테고리의 대소문자는 표시에서 유지<br>
-&nbsp;&nbsp;&nbsp;• 카테고리 없는 항목은 자동으로 General에 포함<br>
-&nbsp;&nbsp;&nbsp;• 카테고리별로 접었다 펼 수 있는 details 태그로 정리<br>
-&nbsp;&nbsp;&nbsp;• 각 카테고리의 진행 상황이 (완료/전체) 형식으로 표시<br>
-&nbsp;&nbsp;&nbsp;• `(issue)` 접두사가 붙은 항목은 자동으로 이슈로 생성되고 번호로 대체<br>
-
-## ⚙️ 환경 설정
-
-`.github/workflows/create-issue-from-commit.yml` 파일에서 다음 설정을 변경할 수 있습니다:
-
-```yaml
-env:
-  TIMEZONE: "Asia/Seoul" # 타임존 설정
-  ISSUE_PREFIX: "📅" # 이슈 제목 접두사
-  ISSUE_LABEL: "daily-log" # 기본 라벨
-  EXCLUDED_COMMITS: "^(chore|docs|style):" # 제외할 커밋 타입
-```
-
-## 📋 자동 생성되는 이슈 형식
-
-```markdown
-# 📅 Daily Development Log (YYYY-MM-DD) - Repository Name
-
-<div align="center">
-
-## 📊 Branch Summary
-
-</div>
-
-<details>
-<summary><h3>✨ Branch Name</h3></summary>
-커밋 상세 내용
-</details>
-
-<div align="center">
-
-## 📝 Todo
-
-</div>
-
-- [ ] TODO 항목 1
-- [x] TODO 항목 2 (완료됨)
-```
-
-## ⚠️ 주의사항
-
-&nbsp;&nbsp;&nbsp;1. 커밋 메시지 형식을 정확히 지켜주세요.<br>
-&nbsp;&nbsp;&nbsp;2. TODO 항목은 `-`로 시작해야 합니다.<br>
-&nbsp;&nbsp;&nbsp;3. 이전 날짜의 이슈는 자동으로 닫힙니다.<br>
 
 </div>
 </details>

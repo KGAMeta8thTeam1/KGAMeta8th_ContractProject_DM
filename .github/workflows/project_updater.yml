@@ -1,0 +1,26 @@
+name: DSR Project Update
+
+on:
+  issues:
+    types: [edited]
+
+jobs:
+  update-project:
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.issue.title, 'Development Status Report')
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r .github/scripts/requirements.txt
+      - name: Run project updater
+        run: python .github/scripts/project_updater.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT: ${{ secrets.PAT }}

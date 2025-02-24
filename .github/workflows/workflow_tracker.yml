@@ -5,16 +5,9 @@ on:
     branches:
       - "**"
     paths-ignore:
+      - "**.md"
       - ".gitignore"
       - "LICENSE"
-  issues:
-    types: [opened, edited, labeled, unlabeled, closed, reopened]
-  project_card:
-    types: [created, moved, deleted, converted]
-  project_column:
-    types: [created, updated, moved, deleted]
-  issue_comment:
-    types: [created]
 
 permissions:
   issues: write
@@ -36,6 +29,10 @@ env:
 jobs:
   process-workflow:
     runs-on: ubuntu-latest
+    if: |
+      !contains(github.event.head_commit.message, '[automated]') &&
+      !contains(github.event.head_commit.message, '[skip ci]') &&
+      !contains(github.event.head_commit.message, '[no ci]')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -53,29 +50,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r .github/scripts/requirements.txt
 
-      - name: Create Daily Log
-        if: github.event_name == 'push'
+      - name: Create Daily Status Report
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python .github/scripts/workflow_tracker.py
 
-      - name: Process Task and Todo
-        if: github.event_name == 'issues' || github.event_name == 'project_card' || github.event_name == 'push'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python .github/scripts/task_processor.py
-
-      - name: Update Project Board
-        if: github.event_name == 'issues' || github.event_name == 'project_card' || github.event_name == 'project_column' || github.event_name == 'push'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python .github/scripts/project_updater.py
-
-      - name: Process Task Approval
-        if: github.event_name == 'issue_comment' || (github.event_name == 'issues' && (github.event.action == 'labeled' || github.event.action == 'unlabeled'))
+      - name: Update Task Report
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
